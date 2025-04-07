@@ -18,6 +18,7 @@ w = 15* u.deg  # Argumento del pericentro
 w = w.to(u.rad)
 t_p = "2025-03-31 00:00:00"  # Tiempo en el que pasa por el pericentro (E=0)
 t_p = Time(t_p, format='iso', scale='utc') #Se convierte el tiempo inicial a formato Time
+R_earth = R_earth.to(u.km)
 GM_earth = GM_earth.to(u.km**3 / u.s**2) # Constante gravitacional terrestre con masa terrestre
 T_o = 2*np.pi*np.sqrt(np.power(a,3)/GM_earth) #Periodo
 
@@ -148,7 +149,7 @@ def orbit():
     axs[1].legend()
 
     # 3. phi vs t
-    axs[2].plot(t_vals[:-1], phi[:-1], label=r'$\phi$ vs t', color='purple', linewidth=2, marker='o')
+    axs[2].plot(t_vals[:-1],phi[:-1], label=r'$\phi$ vs t', color='purple', linewidth=2, marker='o')
     axs[2].set_title(r'$\phi$ vs t')
     axs[2].set_xlabel('Tiempo [s]')
     axs[2].set_ylabel(r'$\phi$ [rad]')
@@ -157,7 +158,9 @@ def orbit():
 
     # Ajustar diseño y guardar
     plt.tight_layout()
+
     plt.savefig('orbita_completa.pdf')
+    print("orbita_completa.pdf creado. \n")
 
 def rMaxMin():
     fmax = 2*arctanMod(np.tan(np.pi/2)*np.sqrt((1+e)/(1-e))) #Se modifica la arcotangente para garantizar la continuidad. (Soluciona la discontinuidad dada por la tangente)
@@ -187,10 +190,10 @@ def findIndexDate(r,r0):
     idx2 = np.searchsorted(-rD, -r0)  #Se busca el índice a derecha, tal que r0 quede ordenado
 
     #Se asegura que se hayan encontrado los índices
-    if idx1 == 0 or idx1 == len(rC):
+    if idx1 == 0:
         raise ValueError("r0 está fuera del rango del arreglo rC")
 
-    if idx2 == 0 or idx2 == len(rD):
+    if idx2 == len(rD):
         raise ValueError("r0 está fuera del rango del arreglo rD")
 
     # print(r[idx1-1],r0,r[idx1], idx1-1)
@@ -201,6 +204,69 @@ def findIndexDate(r,r0):
 def quadraticInterpolation(x1, x2, x3, f1, f2, f3, x):
     p2 = (((x-x2)*(x-x3))/((x1-x2)*(x1-x3)))*f1 + (((x-x1)*(x-x3))/((x2-x1)*(x2-x3)))*f2 + (((x-x1)*(x-x2))/((x3-x1)*(x3-x2)))*f3
     return p2
+
+def findDateGivenIndex(t_vals,r,rIndex,r0):
+    if rIndex<50:
+            x1,x2,x3 = t_vals[rIndex], t_vals[rIndex+1], t_vals[rIndex+2]
+            f1,f2,f3 = r[rIndex], r[rIndex+1], r[rIndex+2]
+            x = np.linspace(x1,x2,30)
+    else:
+            x1,x2,x3 = t_vals[rIndex-1], t_vals[rIndex], t_vals[rIndex+1]
+            f1,f2,f3 = r[rIndex-1], r[rIndex], r[rIndex+1]
+            x = np.linspace(x2,x3,30)
+
+
+
+
+    
+    r_interpolated = np.array(quadraticInterpolation(x1, x2, x3, f1, f2, f3,x))
+
+    closerIndex = np.argmin(np.abs(r_interpolated - r0)) #índice para el cual más nos acercamos
+
+    # print("interpolado: ", r_interpolated[closerIndex])
+    # print("original: ", r0)
+
+    closerT = x[closerIndex] #Tiempo para el cual está en r0, medido desde tp=0
+    dateValue = t_p + closerT*u.s
+
+    # print("closerT: ",closerT)
+    # print("Tiempo más cercano antes de interpolar: ",x1)
+    # print("Fecha inicial: ",t_p.iso)
+    # print("Fecha más cercana antes de interpolar: ",(t_p+x1*u.s).iso)
+    # print("Fecha encontrada: ", dateValue.iso)
+
+    # Gráfico de control
+    plt.figure(figsize=(8, 5))
+
+    # Curva interpolada
+    plt.plot(x, r_interpolated,label='Interpolación cuadrática', color='teal')
+
+    # Puntos originales
+    plt.scatter([x1, x2, x3], [f1.value, f2.value, f3.value], color='red', label='Datos originales', zorder=5)
+
+    plt.plot(t_vals[(rIndex-1):(rIndex+3)], r[(rIndex-1):(rIndex+3)], label='r vs t', color='darkorange', marker='.')
+    # plt.plot(t_vals, r, label='r vs t', color='darkorange', marker='.')
+
+    # Línea vertical en x = closerT
+    plt.axvline(x=closerT, color='gray', linestyle='--', label=r't = $t_{r_0}$')
+
+    # Línea horizontal en y = r0
+    plt.axhline(y=r0, color='purple', linestyle='--', label=r'r = $r_0$')
+
+    # Etiquetas, leyenda y guardado
+    plt.xlabel('Tiempo [s]')
+    plt.ylabel('Distancia [km]')
+    plt.legend()
+    plt.tight_layout()
+    if rIndex<50:
+        plt.savefig(f'controlInterpolationSuperior.pdf')
+        print("controlInterpolationSuperior.pdf creado.")
+    else:
+        plt.savefig(f'controlInterpolationInferior.pdf')
+        print(f'controlInterpolationInferior.pdf creado.')
+
+    return dateValue
+
 
 def date(r0):
     # posición radial y retorna tiempo t0 en que el satélite se localiza allí
@@ -218,82 +284,17 @@ def date(r0):
 
     rmax, rmin = rMaxMin()
 
-    # rmax= round(np.max(r).value,3)
-    # rmin= round(np.min(r).value,3)
-
+    # rmax= np.max(r).value
+    # rmin= np.min(r).value
     if r0>rmax or r0<rmin:
-         raise ValueError(f"El valor de r0 debe estar entre {rmin} km y {rmax} km")
+         raise ValueError(f"El valor de r0 debe estar entre {round(rmin,3)} km y {round(rmax,3)} km")
 
     rIndexIncreasing, rIndexDecreasing = findIndexDate(r,r0)
 
     t_vals = (t - t[0]).to_value('s')  # Tiempo desde t0 en segundos
-
-
-    # def findDateGivenIndex(t_vals,rIndex):
-
-    x1,x2,x3 = t_vals[rIndexIncreasing], t_vals[rIndexIncreasing+1], t_vals[rIndexIncreasing+2]
-    f1,f2,f3 = r[rIndexIncreasing], r[rIndexIncreasing+1], r[rIndexIncreasing+2]
-
-    x = np.linspace(x1,x2,30)
-    r_interpolated = np.array(quadraticInterpolation(x1, x2, x3, f1, f2, f3,x))
-
-
-
-
-
-    closerIndex = np.argmin(np.abs(r_interpolated - r0)) #índice para el cual más nos acercamos
-    print(r_interpolated[closerIndex])
-    print(r0)
-
-    closerT = x[closerIndex] #Tiempo para el cual está en r0, medido desde tp=0
-
-    print("closerT: ",closerT)
-    print(x1)
-
-
-    date = t_p + closerT*u.s
-    print(t_p.iso)
-    print((t_p+x1*u.s).iso)
-    print(date.iso)
-
-    # Crear el gráfico
-    plt.figure(figsize=(8, 5))
-
-    # Curva interpolada
-    plt.plot(x, r_interpolated,label='Interpolación cuadrática', color='teal')
-
-    # Puntos originales
-    plt.scatter([x1, x2, x3], [f1.value, f2.value, f3.value], color='red', label='Datos originales', zorder=5)
-
-#    plt.plot(t_vals[(rIndexIncreasing-1):(rIndexIncreasing+3)], r[(rIndexIncreasing-1):(rIndexIncreasing+3)], label='r vs t', color='darkorange', marker='.')
-    plt.plot(t_vals, r, label='r vs t', color='darkorange', marker='.')
-
-    # Línea vertical en x = closerT
-    plt.axvline(x=closerT, color='gray', linestyle='--', label='x = closerT')
-
-    # Línea horizontal en y = r0
-    plt.axhline(y=r0, color='purple', linestyle='--', label='r = r0')
-
-    # Etiquetas, leyenda y guardado
-    plt.xlabel('Tiempo [s]')
-    plt.ylabel('Distancia [km]')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(f'controlInterpolation.pdf')
-
-
-    # print(t.iso)
-
-
-
-
-
-
-
-
-
-
-
+    dateIncreasing=findDateGivenIndex(t_vals,r,rIndexIncreasing,r0)
+    dateDecreasing=findDateGivenIndex(t_vals,r,rIndexDecreasing,r0)
+    return dateIncreasing,dateDecreasing
 
 
 def main():
@@ -301,14 +302,17 @@ def main():
     t_test = Time(t_test, format='iso', scale='utc')
     t = t_test
 
+    r,phi,f = position(t)
+    print(f"La posición para la época {t_test.iso} es r={r}, phi = {phi.to(u.deg)} \n")
 
+    orbit()
 
-
-
-    # r,phi,f = position(t)
-    # print(r, phi.to(u.deg))
-#    orbit()
-    date(9000)
+    r0 = 1.5*R_earth.value
+    # r0= 9683
+    dateIncreasing,dateDecreasing = date(r0)
+    dateIncreasingSec = (dateIncreasing-t_p).to_value('s')
+    dateDecreasingSec = (dateDecreasing-t_p).to_value('s')
+    print(f"La distancia radial {r0} km se alcanza para las épocas {dateIncreasing.iso} ({round(dateIncreasingSec,3)} s) y {dateDecreasing.iso} ({round(dateDecreasingSec,3)} s)")
 
 
 
