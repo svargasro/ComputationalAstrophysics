@@ -93,10 +93,10 @@ def orbit():
     delta_total = T - t_p
 
     steps = np.linspace(0, 1, 53)
-    delta_array = steps * delta_total  # TimeDelta array
+    delta_array = steps * delta_total  # Arreglo de pasos de tiempo para crear arreglo de fechas.
 
-    # Sumar a la fecha inicial para obtener el array de fechas
-    t = t_p + delta_array
+
+    t = t_p + delta_array #Array de fechas desde t_p hasta T
 
     r,phi,f = position(t)
 
@@ -112,7 +112,7 @@ def orbit():
     x = r * np.cos(phi)
     y = r * np.sin(phi)
 
-    t_vals = (t - t[0]).to_value('s')  # Tiempo desde t0 en segundos
+    t_vals = (t - t[0]).to_value('s')  # Tiempo desde t0 en segundos con t_p = 0
 
 
     fig, axs = plt.subplots(3, 1, figsize=(8, 10), sharex=False)
@@ -123,11 +123,11 @@ def orbit():
     axs[0].set_ylabel('y [km]')
     axs[0].legend()
 
-    # Marcar el punto (0,0) como ubicación Tierra - foco
+    # Se marca el punto (0,0) como ubicación Tierra - foco
     axs[0].scatter(0, 0, color='blue', marker='o', s=80)
     axs[0].annotate('Tierra - foco', (0, 0), textcoords="offset points", xytext=(10, -15), ha='left', fontsize=9)
 
-    # Marcar el pericentro (x[0], y[0])
+    # Se marca el pericentro (x[0], y[0])
 
     axs[0].scatter(x[0].value, y[0].value, color='red', marker='*', s=100)
     axs[0].annotate('Pericentro', (x[0].value, y[0].value), textcoords="offset points", xytext=(5, 10), ha='left', fontsize=9)
@@ -156,13 +156,14 @@ def orbit():
     axs[2].ticklabel_format(style='scientific', axis='both', scilimits=(-1,3))
     axs[2].legend()
 
-    # Ajustar diseño y guardar
+
     plt.tight_layout()
 
     plt.savefig('orbita_completa.pdf')
     print("orbita_completa.pdf creado. \n")
 
 def rMaxMin():
+    #Máximo en E=pi y mínimo en E=0
     fmax = 2*arctanMod(np.tan(np.pi/2)*np.sqrt((1+e)/(1-e))) #Se modifica la arcotangente para garantizar la continuidad. (Soluciona la discontinuidad dada por la tangente)
     fmin = 2*arctanMod(np.tan(0/2)*np.sqrt((1+e)/(1-e))) #Se modifica la arcotangente para garantizar la continuidad. (Soluciona la discontinuidad dada por la tangente)
     rmin = round((a*(1-np.power(e,2))/(1+e*np.cos(fmin))).value,3)
@@ -206,6 +207,8 @@ def quadraticInterpolation(x1, x2, x3, f1, f2, f3, x):
     return p2
 
 def findDateGivenIndex(t_vals,r,rIndex,r0):
+    #Los puntos elegidos para interpolar dependen de si está en la parte creciente y en la parte
+    #decreciente. Lo anterior para evitar errores para el último dato de r decreciente.
     if rIndex<50:
             x1,x2,x3 = t_vals[rIndex], t_vals[rIndex+1], t_vals[rIndex+2]
             f1,f2,f3 = r[rIndex], r[rIndex+1], r[rIndex+2]
@@ -219,7 +222,7 @@ def findDateGivenIndex(t_vals,r,rIndex,r0):
 
 
     
-    r_interpolated = np.array(quadraticInterpolation(x1, x2, x3, f1, f2, f3,x))
+    r_interpolated = np.array(quadraticInterpolation(x1, x2, x3, f1, f2, f3,x)) #Se interpola
 
     closerIndex = np.argmin(np.abs(r_interpolated - r0)) #índice para el cual más nos acercamos
 
@@ -253,7 +256,7 @@ def findDateGivenIndex(t_vals,r,rIndex,r0):
     # Línea horizontal en y = r0
     plt.axhline(y=r0, color='purple', linestyle='--', label=r'r = $r_0$')
 
-    # Etiquetas, leyenda y guardado
+
     plt.xlabel('Tiempo [s]')
     plt.ylabel('Distancia [km]')
     plt.legend()
@@ -269,19 +272,17 @@ def findDateGivenIndex(t_vals,r,rIndex,r0):
 
 
 def date(r0):
-    # posición radial y retorna tiempo t0 en que el satélite se localiza allí
+    #Cálculo de tiempo similar al de orbit()
     T = TimeDelta((T_o).value*u.s)
     T = t_p + T
-    # Diferencia total de tiempo como TimeDelta
     delta_total = T - t_p
     steps = np.linspace(0, 1, 100)
-    delta_array = steps * delta_total  # TimeDelta array
-
-    # Sumar a la fecha inicial para obtener el array de fechas
+    delta_array = steps * delta_total
     t = t_p + delta_array
 
     r,phi,f = position(t)
 
+    #Cálculo teórico de rmax y rmin
     rmax, rmin = rMaxMin()
 
     # rmax= np.max(r).value
@@ -289,7 +290,7 @@ def date(r0):
     if r0>rmax or r0<rmin:
          raise ValueError(f"El valor de r0 debe estar entre {round(rmin,3)} km y {round(rmax,3)} km")
 
-    rIndexIncreasing, rIndexDecreasing = findIndexDate(r,r0)
+    rIndexIncreasing, rIndexDecreasing = findIndexDate(r,r0) #Se halla el índice para el cual r se parece a r0.
 
     t_vals = (t - t[0]).to_value('s')  # Tiempo desde t0 en segundos
     dateIncreasing=findDateGivenIndex(t_vals,r,rIndexIncreasing,r0)
@@ -313,9 +314,6 @@ def main():
     dateIncreasingSec = (dateIncreasing-t_p).to_value('s')
     dateDecreasingSec = (dateDecreasing-t_p).to_value('s')
     print(f"La distancia radial {r0} km se alcanza para las épocas {dateIncreasing.iso} ({round(dateIncreasingSec,3)} s) y {dateDecreasing.iso} ({round(dateDecreasingSec,3)} s)")
-
-
-
 
 
 if __name__ == "__main__":
