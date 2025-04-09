@@ -194,7 +194,7 @@ def graphicI(waveLambda,rMaxValue):
 
     cbar = plt.colorbar(c, ax=ax, pad=0.1, shrink=0.7)
     cbar.set_label('Intensidad (Normalizada Log)')
-    plt.title('Patrón de difracción circular', va='bottom')
+    plt.title(r'Patrón de difracción circular: I($r$ [$\mu m$])', va='bottom')
     fig.savefig('patronDifraccion.pdf')
     print('patronDifraccion.pdf creado.')
 
