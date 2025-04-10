@@ -110,8 +110,8 @@ def findMaxMin(I,r):
 
     '''
     np.sign devuelve un arreglo donde vale 1 si el valor es positivo, -1 si el valor es negativo y 0 para los ceros.
-    Si hay un cambio de signo se tendrá -1-1=-2 (máximo) ó 1+1=2 (mínimo), que son distintos de 0. En caso de que no haya cambio de signo, se tendrá 0.
-
+    Si hay un cambio de signo de i+1 a i se tendrá -1-1=-2 (máximo) ó 1+1=2 (mínimo), que son distintos de 0.
+    En caso de que no haya cambio de signo, se tendrá 0.
     '''
 
     index_change = np.diff(np.sign(dI_dr))
@@ -202,6 +202,7 @@ def graphicI(waveLambda,rMaxValue):
 
 def main():
 
+    #Prueba de uso:
     # m = 1  #Orden Bessel
     # x = 5  #Valor de prueba
     # numPoints = 1001 #Debe ser un número impar
