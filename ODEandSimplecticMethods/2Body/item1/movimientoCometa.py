@@ -224,16 +224,16 @@ def graphicsRK4(x,y,t,energy,angularMom,isAdaptative):
     # Plot 1: y vs x
     axs[0].plot(x, y, label="Trayectoria")
     axs[0].set_title("Trayectoria: y vs x")
-    axs[0].set_xlabel("x")
-    axs[0].set_ylabel("y")
+    axs[0].set_xlabel("x [UA]")
+    axs[0].set_ylabel("y [UA]")
     axs[0].grid(True)
     axs[0].legend()
 
     # Plot 2: energy vs t
     axs[1].plot(t, energy, label="Energía", color='b')
     axs[1].set_title("Energía vs tiempo")
-    axs[1].set_xlabel("Tiempo (t)")
-    axs[1].set_ylabel("Energía")
+    axs[1].set_xlabel("Tiempo (t) [yr]")
+    axs[1].set_ylabel(r'Energía [$UA^2/yr^2$]')
     axs[1].set_ylim(np.min(energy)-0.05,np.max(energy)+0.05)
     axs[1].grid(True)
     axs[1].legend()
@@ -243,8 +243,8 @@ def graphicsRK4(x,y,t,energy,angularMom,isAdaptative):
     # Plot 3: angularMom vs t
     axs[2].plot(t, angularMom, label="Momento angular", color='r')
     axs[2].set_title("Momento angular vs tiempo")
-    axs[2].set_xlabel("Tiempo (t)")
-    axs[2].set_ylabel("Momento angular")
+    axs[2].set_xlabel("Tiempo (t) [yr]")
+    axs[2].set_ylabel("Momento angular []")
     axs[2].set_ylim(np.min(angularMom)-0.1,np.max(angularMom)+0.1)
     axs[2].grid(True)
     axs[2].legend()
@@ -270,8 +270,8 @@ def graphicsRK4(x,y,t,energy,angularMom,isAdaptative):
         axs[0].set_title(r"x vs t. Comportamiento paso $\Delta t$")
         for i in range(num_points):
             axs[0].axvline(x=t[i], color='gray', linestyle='-', alpha=0.1)
-        axs[0].set_xlabel('t')
-        axs[0].set_ylabel('x')
+        axs[0].set_xlabel('t [yr]')
+        axs[0].set_ylabel('x [UA]')
         axs[0].legend(loc='upper right')
 
         # Plot y vs t
@@ -279,8 +279,8 @@ def graphicsRK4(x,y,t,energy,angularMom,isAdaptative):
         axs[1].set_title(r"y vs t. Comportamiento paso $\Delta t$")
         for i in range(num_points):
             axs[1].axvline(x=t[i], color='gray', linestyle='-', alpha=0.1)
-        axs[1].set_xlabel('t')
-        axs[1].set_ylabel('y')
+        axs[1].set_xlabel('t [yr]')
+        axs[1].set_ylabel('y [UA]')
         axs[1].legend(loc='upper right')
 
         # Guardar el gráfico

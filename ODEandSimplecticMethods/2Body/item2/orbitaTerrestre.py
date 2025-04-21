@@ -49,7 +49,7 @@ class dynamicManager:
         #No se implementa la fuerza que siente Planeta2, que corresponde al sol, puesto que no se pide en el problema.
         #Planeta2.addForce(-1*F1) #Siente la fuerza en sentido contrario pero de la misma magnitud.
         #Cálculo energía potencial
-        self.EpTotal += -G_sun * m2 * m1 / r_mag
+        self.EpTotal += -G_sun * m2 / r_mag #Energía potencial por unidad de masa de la tierra. 
 
     def calculateAllForces(self,Planetas,r_arrays):
         self.EpTotal = 0.0 #Se reinicia la energía potencial
@@ -92,26 +92,28 @@ def graphicPlanets(positionsBodies, velocityBodies, energy, t_array):
     ax1.scatter(0, 0, color='yellow', marker='o', s=80) #Sol
     ax1.scatter(x[-1], y[-1], color='blue', marker='o', s=80) #Tierra
     # Añadir etiquetas y leyenda
-    ax1.set_xlabel('x')
-    ax1.set_ylabel('y')
+    ax1.set_xlabel('x [UA]')
+    ax1.set_ylabel('y [UA]')
     ax1.set_title('Órbita tierra-sol')
     ax1.legend()
     ax1.set_aspect('equal')
     plt.tight_layout()
     plt.savefig('verlet.pdf')
+    print("verlet.pdf creado.")
     plt.close(fig1)
 
     # Guardar energías en otro PDF
-    fig2, axes = plt.subplots(1, 3, figsize=(18, 6))  # Ahora 3 subplots
+    fig2, axes = plt.subplots(1, 3, figsize=(18, 6))  # 3 subplots
 
     # Energía Potencial
     ax2 = axes[0]
     energia_pot_inicial = energy[0, 0]
     energia_pot_promedio = np.mean(energy[:, 0])
     energia_pot = energy[:, 0]
-    ax2.plot(t_array[:-1], energia_pot, label=f'Energía Potencial\nInicial: {energia_pot_inicial:.7e}\nPromedio: {energia_pot_promedio:.7e}', color='blue')
-    ax2.set_xlabel('Tiempo')
-    ax2.set_ylabel('Energía')
+    energia_pot_desv = np.std(energia_pot)
+    ax2.plot(t_array[:-1], energia_pot, label=f'Energía Potencial\nInicial: {energia_pot_inicial:.7e}\nPromedio: {energia_pot_promedio:.7e}\nDesviación estándar: {energia_pot_desv:.2e}', color='blue')
+    ax2.set_xlabel('Tiempo [yr]')
+    ax2.set_ylabel(r'Energía [$UA^2/yr^2$]')
     ax2.set_title('Energía Potencial')
     ax2.legend()
     ax2.ticklabel_format(style='sci', axis='both', scilimits=(0, 0))  # Notación científica
@@ -121,28 +123,32 @@ def graphicPlanets(positionsBodies, velocityBodies, energy, t_array):
     energia_cin_inicial = energy[0, 1]
     energia_cin_promedio = np.mean(energy[:, 1])
     energia_cin = energy[:, 1]
-    ax3.plot(t_array[:-1], energia_cin, label=f'Energía Cinética\nInicial: {energia_cin_inicial:.7e}\nPromedio: {energia_cin_promedio:.7e}', color='orange')
-    ax3.set_xlabel('Tiempo')
-    ax3.set_ylabel('Energía')
+    energia_cin_desv = np.std(energia_cin)
+    ax3.plot(t_array[:-1], energia_cin, label=f'Energía Cinética\nInicial: {energia_cin_inicial:.7e}\nPromedio: {energia_cin_promedio:.7e}\nDesviación estándar: {energia_cin_desv:.2e}', color='orange')
+    ax3.set_xlabel('Tiempo [yr]')
+    ax3.set_ylabel(r'Energía [$UA^2/yr^2$]')
     ax3.set_title('Energía Cinética')
     ax3.legend()
     ax3.ticklabel_format(style='sci', axis='both', scilimits=(0, 0))  # Notación científica
-
+    print(energia_cin[0], energia_cin[int(len(energia_cin)/2)], energia_cin[-1])
+    
     # Energía Total
     ax4 = axes[2]
     energia_total = energia_cin + energia_pot
     energia_total_inicial = energia_total[0]
     energia_total_promedio = np.mean(energia_total)
-    ax4.plot(t_array[:-1], energia_total, label=f'Energía Total\nInicial: {energia_total_inicial:.7e}\nPromedio: {energia_total_promedio:.7e}', color='green')
-    ax4.set_xlabel('Tiempo')
-    ax4.set_ylabel('Energía')
+    ax4.scatter(t_array[:-1], energia_total, label=f'Energía Total\nInicial: {energia_total_inicial:.7e}\nPromedio: {energia_total_promedio:.7e}', color='green')
+    ax4.set_xlabel('Tiempo [yr]')
+    ax4.set_ylabel(r'Energía [$UA^2/yr^2$]')
+    ax4.set_ylim(np.min(energia_total)-0.01,np.max(energia_total)+0.01)
     ax4.set_title('Energía Total')
     ax4.legend()
     ax4.ticklabel_format(style='sci', axis='both', scilimits=(0, 0))  # Notación científica
-
+    
     # Ajustar diseño y guardar
     plt.tight_layout()
     plt.savefig('energyVerlet.pdf')
+    print("energyVerlet.pdf creado.")
     plt.close(fig2)
 
 
@@ -160,7 +166,7 @@ def verletAlgorithm(finalTime,dt,Planetas):
 
         initialPosition = np.array([cuerpo.r for cuerpo in Planetas])
         initialVelocity = np.array([cuerpo.V for cuerpo in Planetas])
-        masses = np.array([cuerpo.m for cuerpo in Planetas])
+        masses = np.array([cuerpo.m for cuerpo in Planetas])    
 
 
         #Inicialización:
@@ -184,7 +190,7 @@ def verletAlgorithm(finalTime,dt,Planetas):
         velocityBodies[0] = initialVelocity #[(vx_0,vy_0,vz_0),(vx_1,vy_1,vz_1)]
 
         energy[0][0] = Newton.EpTotal
-        energy[0][1] = (1/2)*np.sum(np.sum(initialVelocity**2, axis=1)*masses)
+        energy[0][1] = (1/2)*np.sum(np.sum(initialVelocity**2, axis=1)) #No se incluye la multiplicación de la masa, pues debería ser la de la tierra. Es la energía cinética por unidad de masa.
 
 
         #Algoritmo
@@ -210,9 +216,10 @@ def verletAlgorithm(finalTime,dt,Planetas):
 
 
             energy[i-1][0] = Newton.EpTotal
-            energy[i-1][1] = (1/2)*np.sum(np.sum(velocity**2, axis=1)*masses)
+            energy[i-1][1] = (1/2)*np.sum(np.sum(velocity**2, axis=1))
 
         return positionsBodies,velocityBodies,energy,t_array
+
 
     
 def main():
@@ -248,7 +255,7 @@ def main():
         # print("=============================================\n")
 
         #Configuración temporal
-        finalTime = 5 # Un año
+        finalTime = 1 # Un año
         dt= hour.to(yr) #Paso de tiempo de 1 hora
 
         positionsBodies,velocityBodies,energy,t_array = verletAlgorithm(finalTime,dt,Planetas)
