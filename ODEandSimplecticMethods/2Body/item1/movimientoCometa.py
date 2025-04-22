@@ -244,7 +244,7 @@ def graphicsRK4(x,y,t,energy,angularMom,isAdaptative):
     axs[2].plot(t, angularMom, label="Momento angular", color='r')
     axs[2].set_title("Momento angular vs tiempo")
     axs[2].set_xlabel("Tiempo (t) [yr]")
-    axs[2].set_ylabel("Momento angular []")
+    axs[2].set_ylabel(r"Momento angular [$UA^2/yr$]") 
     axs[2].set_ylim(np.min(angularMom)-0.1,np.max(angularMom)+0.1)
     axs[2].grid(True)
     axs[2].legend()

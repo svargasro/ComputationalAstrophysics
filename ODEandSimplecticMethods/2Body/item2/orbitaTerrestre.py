@@ -2,6 +2,7 @@
 import numpy as np
 from astropy.constants import M_sun,G, M_earth
 from astropy.units import au, yr, hour
+import astropy.units as u
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -66,7 +67,7 @@ class dynamicManager:
 
 
 
-def graphicPlanets(positionsBodies, velocityBodies, energy, t_array):
+def graphicPlanets(positionsBodies, velocityBodies, energy, t_array, isPluto):
     plt.style.use('seaborn-v0_8')
     #(t,N,3)
     # Índices donde los valores son diferentes de 0
@@ -88,30 +89,37 @@ def graphicPlanets(positionsBodies, velocityBodies, energy, t_array):
 
     x = positionsBodies[:, 1, 0]  # Componente x del cuerpo 1
     y = positionsBodies[:, 1, 1]  # Componente y del cuerpo 1
-    ax1.plot(x, y, label=f'Tierra')  # Graficar la trayectoria
+    if isPluto:
+        planetName = "Plutón"
+        limitGraphic = 1e-4
+    else:
+        planetName = "Tierra" 
+        limitGraphic = 1e-5
+    ax1.plot(x, y, label=f'{planetName}')  # Graficar la trayectoria
     ax1.scatter(0, 0, color='yellow', marker='o', s=80) #Sol
     ax1.scatter(x[-1], y[-1], color='blue', marker='o', s=80) #Tierra
     # Añadir etiquetas y leyenda
     ax1.set_xlabel('x [UA]')
     ax1.set_ylabel('y [UA]')
-    ax1.set_title('Órbita tierra-sol')
+
+    ax1.set_title(f'Órbita {planetName}-Sol')
     ax1.legend()
-    ax1.set_aspect('equal')
+    if not isPluto:
+        ax1.set_aspect('equal')
     plt.tight_layout()
     plt.savefig('verlet.pdf')
     print("verlet.pdf creado.")
     plt.close(fig1)
 
     # Guardar energías en otro PDF
-    fig2, axes = plt.subplots(1, 3, figsize=(18, 6))  # 3 subplots
+    fig2, axes = plt.subplots(1, 4, figsize=(18, 6))  # 3 subplots
 
     # Energía Potencial
     ax2 = axes[0]
-    energia_pot_inicial = energy[0, 0]
     energia_pot_promedio = np.mean(energy[:, 0])
     energia_pot = energy[:, 0]
     energia_pot_desv = np.std(energia_pot)
-    ax2.plot(t_array[:-1], energia_pot, label=f'Energía Potencial\nInicial: {energia_pot_inicial:.7e}\nPromedio: {energia_pot_promedio:.7e}\nDesviación estándar: {energia_pot_desv:.2e}', color='blue')
+    ax2.plot(t_array[:-1], energia_pot, label=f'Energía potencial promedio: {energia_pot_promedio:.7e}\nDesviación estándar: {energia_pot_desv:.2e}', color='blue')
     ax2.set_xlabel('Tiempo [yr]')
     ax2.set_ylabel(r'Energía [$UA^2/yr^2$]')
     ax2.set_title('Energía Potencial')
@@ -120,30 +128,62 @@ def graphicPlanets(positionsBodies, velocityBodies, energy, t_array):
 
     # Energía Cinética
     ax3 = axes[1]
-    energia_cin_inicial = energy[0, 1]
     energia_cin_promedio = np.mean(energy[:, 1])
     energia_cin = energy[:, 1]
     energia_cin_desv = np.std(energia_cin)
-    ax3.plot(t_array[:-1], energia_cin, label=f'Energía Cinética\nInicial: {energia_cin_inicial:.7e}\nPromedio: {energia_cin_promedio:.7e}\nDesviación estándar: {energia_cin_desv:.2e}', color='orange')
+    ax3.plot(t_array[:-1], energia_cin, label=f'Energía cinética promedio: {energia_cin_promedio:.7e}\nDesviación estándar: {energia_cin_desv:.2e}', color='orange')
     ax3.set_xlabel('Tiempo [yr]')
     ax3.set_ylabel(r'Energía [$UA^2/yr^2$]')
     ax3.set_title('Energía Cinética')
     ax3.legend()
     ax3.ticklabel_format(style='sci', axis='both', scilimits=(0, 0))  # Notación científica
-    print(energia_cin[0], energia_cin[int(len(energia_cin)/2)], energia_cin[-1])
+    #print(energia_cin[0], energia_cin[int(len(energia_cin)/2)], energia_cin[-1])
     
     # Energía Total
     ax4 = axes[2]
     energia_total = energia_cin + energia_pot
     energia_total_inicial = energia_total[0]
     energia_total_promedio = np.mean(energia_total)
-    ax4.scatter(t_array[:-1], energia_total, label=f'Energía Total\nInicial: {energia_total_inicial:.7e}\nPromedio: {energia_total_promedio:.7e}', color='green')
+    ax4.plot(t_array[1:-1], energia_total[1:], label=f'Energía Total\nInicial: {energia_total_inicial:.7e}\nPromedio: {energia_total_promedio:.7e}', color='green')
     ax4.set_xlabel('Tiempo [yr]')
     ax4.set_ylabel(r'Energía [$UA^2/yr^2$]')
-    ax4.set_ylim(np.min(energia_total)-0.01,np.max(energia_total)+0.01)
+
+    ax4.set_ylim(np.min(energia_total)-limitGraphic,np.max(energia_total)+limitGraphic)
     ax4.set_title('Energía Total')
     ax4.legend()
     ax4.ticklabel_format(style='sci', axis='both', scilimits=(0, 0))  # Notación científica
+
+
+    ax5 = axes[3]
+
+
+    # Graficar Energía Cinética
+    ax5.plot(t_array[:-1], energia_cin, label='Energía Cinética', color='blue')
+
+    # Graficar Energía Potencial
+    ax5.plot(t_array[:-1], energia_pot, label='Energía Potencial', color='red')
+
+    # Graficar Energía Total
+    ax5.plot(
+        t_array[1:-1],
+        energia_total[1:],
+        label=(
+            f'Energía Total'
+        ),
+        color='green'
+    )
+
+    # Etiquetas y formato
+    ax5.set_xlabel('Tiempo [yr]')
+    ax5.set_ylabel(r'Energía [$UA^2/yr^2$]')
+    ax5.set_title('Energías del Sistema (Cinética, Potencial y Total)')
+
+
+    # Leyenda y notación científica
+    ax5.legend()
+    ax5.ticklabel_format(style='sci', axis='both', scilimits=(0, 0))
+
+     
     
     # Ajustar diseño y guardar
     plt.tight_layout()
@@ -224,12 +264,35 @@ def verletAlgorithm(finalTime,dt,Planetas):
     
 def main():
 
-        #Sistema Tierra-Sol:
-        m0 = 1 #masa solar
-        m1 =  M_earth*(1/solar_mass)
-        m1 = m1.value
-        x0_1 = 1.4710e11/a_unit
-        vy0_1 = (3.0287e4/a_unit)*yrToSec
+        isPluto = False #Booleano que indica cuando es Plutón 
+
+        if isPluto:
+            
+            #Sistema Plutón-Sol:
+            m0 = 1 #masa solar
+            m1 =   1.3e22*(1/solar_mass)
+            m1 = m1.value
+            x0_1 = 4.4368e12/a_unit   
+            vy0_1 = (6.1218e3/a_unit)*yrToSec  
+
+            # Definimos las cantidades del periodo
+            years = 248 * u.yr
+            days = 197 * u.day
+            hours = 5.5 * u.hour
+
+            total_time = years + days + hours
+
+            finalTime = total_time.to(u.yr).value
+            
+    
+        else:
+            #Sistema Tierra-Sol:
+            m0 = 1 #masa solar
+            m1 =  M_earth*(1/solar_mass)
+            m1 = m1.value
+            x0_1 = 1.4710e11/a_unit
+            vy0_1 = (3.0287e4/a_unit)*yrToSec
+            finalTime = 2
 
 
         #Proyecto 2:
@@ -255,13 +318,13 @@ def main():
         # print("=============================================\n")
 
         #Configuración temporal
-        finalTime = 1 # Un año
+        
         dt= hour.to(yr) #Paso de tiempo de 1 hora
 
         positionsBodies,velocityBodies,energy,t_array = verletAlgorithm(finalTime,dt,Planetas)
 
 
-        graphicPlanets(positionsBodies, velocityBodies, energy, t_array)
+        graphicPlanets(positionsBodies, velocityBodies, energy, t_array,isPluto)
 
 
 
